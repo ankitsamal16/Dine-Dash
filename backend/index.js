@@ -16,7 +16,7 @@ require("dotenv").config();
 
 // app config
 const app = express();
-const PORT = 4000
+const port = process.env.PORT || 4000;
 
 
 
@@ -49,8 +49,8 @@ app.get("/", (req, res)=> {
 
 
 // starting the express server
-app.listen(PORT, () => {
-    console.log(`Server Started Succesfully on http://localhost:${PORT}`)
+app.listen(port, () => {
+    console.log(`Server Started Succesfully on http://localhost:${port}`)
 })
 
 
