@@ -58,20 +58,28 @@ exports.removeFromCart = async (req, res) => {
 
 
 // 3. fetch user's cart data
+
 exports.getCart = async (req, res) => {
-    try{
+    try {
         let userData = await userModel.findById(req.body.userId);
-        let cartData = await userData.cartData;
+        
+        if (!userData) {
+            return res.json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        let cartData = await userData.cartData; // Await if cartData is a promise
         res.json({
             success: true,
             cartData
-        })
-    }
-    catch(error){
+        });
+    } catch (error) {
         console.log(error);
         res.json({
             success: false,
-            message: "Error while fetching all cartdata"
-        })
+            message: "Error while fetching all cart data"
+        });
     }
-}
+};

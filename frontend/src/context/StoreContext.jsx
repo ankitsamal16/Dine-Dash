@@ -1,86 +1,95 @@
 import { createContext, useEffect, useState } from "react";
-import axios from "axios"
-// import { food_list } from "../assets/assets";
+import axios from "axios";
 
-export const StoreContext = createContext(null)
+export const StoreContext = createContext(null);
 
 const StoreContextProvider = (props) => {
-
-
     const url = "http://localhost:4000";
-
-    
     const [token, setToken] = useState("");
-
-
     const [cartItems, setCartItems] = useState({});
+    const [food_list, setFoodList] = useState([]);
 
-
-    const [food_list, setFoodList] = useState([])
-
+    // Fetch the list of food items from the server
     const fetchFoodList = async () => {
-        const response = await axios.get(url+"/api/food/list")
-        setFoodList(response.data.data);
-    }
+        try {
+            const response = await axios.get(`${url}/api/food/list`);
+            setFoodList(response.data.data);
+        } catch (error) {
+            console.error("Error fetching food list:", error);
+        }
+    };
 
-
+    // Load cart data for the user based on the token
     const loadCartData = async (token) => {
-        const response = await axios.post(url+"/api/cart/get", {}, {headers: {token}});
-        setCartItems(response.data.cartData);
-    }
+        try {
+            const response = await axios.post(`${url}/api/cart/get`, {}, { headers: { token } });
+            setCartItems(response.data.cartData);
+        } catch (error) {
+            console.error("Error loading cart data:", error);
+        }
+    };
 
-
+    // Add an item to the cart
     const addToCart = async (itemId) => {
-        if(!cartItems[itemId]){
-            setCartItems((prev)=>({...prev,[itemId]:1}))
-        }
-        else{
-            setCartItems((prev)=>({...prev,[itemId]:prev[itemId]+1}))
-        }
+        setCartItems((prev) => ({
+            ...prev,
+            [itemId]: (prev[itemId] || 0) + 1,
+        }));
 
-        if(token){
-            await axios.post(url+"/api/cart/add", {itemId}, {headers:{token}});
+        if (token) {
+            try {
+                await axios.post(`${url}/api/cart/add`, { itemId }, { headers: { token } });
+            } catch (error) {
+                console.error("Error adding to cart:", error);
+            }
         }
-    }
+    };
 
+    // Remove an item from the cart
     const removeFromCart = async (itemId) => {
-        setCartItems((prev)=>({...prev,[itemId]:prev[itemId]-1}))
+        setCartItems((prev) => ({
+            ...prev,
+            [itemId]: prev[itemId] - 1,
+        }));
 
-        if(token){
-            await axios.post(url+"/api/cart/remove", {itemId}, {headers:{token}});
+        if (token) {
+            try {
+                await axios.post(`${url}/api/cart/remove`, { itemId }, { headers: { token } });
+            } catch (error) {
+                console.error("Error removing from cart:", error);
+            }
         }
-    }
+    };
 
-
-    // useEffect(() => {
-    //     console.log(cartItems);
-    // }, [cartItems])
-
+    // Calculate the total amount in the cart
     const getTotalCartAmount = () => {
         let totalAmount = 0;
-        for(const item in cartItems){
-            if(cartItems[item] > 0){
-                let itemInfo = food_list.find((product) => product._id === item);
-                totalAmount += itemInfo.price * cartItems[item]; 
+        for (const item in cartItems) {
+            if (cartItems[item] > 0) {
+                const itemInfo = food_list.find((product) => product._id === item);
+                if (itemInfo) {
+                    totalAmount += itemInfo.price * cartItems[item];
+                }
             }
         }
         return totalAmount;
-    }
+    };
+//     // whenever we reload the token used to be removed by default and user had to sign in again so to prevent that we use this fucntion
+//     // even if we reload the token state will not change, to remove the token user has to logout
 
 
-    // whenever we reload the token used to be removed by default and user had to sign in again so to prevent that we use this fucntion
-    // even if we reload the token state will not change, to remove the token user has to logout
+    // Load initial data when the component mounts
     useEffect(() => {
-        async function loadData(){
-            await fetchFoodList()
-            if(localStorage.getItem("token")){
-            setToken(localStorage.getItem("token"));
-            await loadCartData(localStorage.getItem("token"));
+        const loadData = async () => {
+            await fetchFoodList();
+            const storedToken = localStorage.getItem("token");
+            if (storedToken) {
+                setToken(storedToken);
+                await loadCartData(storedToken);
             }
-        }
+        };
         loadData();
-    }, [])
-
+    }, []);
 
     const contextValue = {
         food_list,
@@ -91,14 +100,14 @@ const StoreContextProvider = (props) => {
         getTotalCartAmount,
         url,
         token,
-        setToken
-    }
+        setToken,
+    };
 
     return (
         <StoreContext.Provider value={contextValue}>
             {props.children}
         </StoreContext.Provider>
-    )
-}
+    );
+};
 
-export default StoreContextProvider
+export default StoreContextProvider;
